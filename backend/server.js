@@ -1,29 +1,22 @@
-const express = require("express");
-const cors = require("cors");
-const csv = require("csv-parser");
-const fs = require("fs");
+import express from "express";
+import cors from "cors";
+import { searchProducts } from "./api/vector-db.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let products = [];
+// API-endepunkt for å søke i produktdatabasen
+app.post("/api/search", async (req, res) => {
+  const { query } = req.body;
+  if (!query) {
+    return res.status(400).json({ error: "Søketekst mangler" });
+  }
 
-// Les CSV-fil og lagre produktdata
-fs.createReadStream("./data/products.csv")
-  .pipe(csv())
-  .on("data", (row) => products.push(row))
-  .on("end", () =>
-    console.log("CSV-data lastet inn:", products.length, "rader")
-  );
-
-// API-endepunkt for å hente produktdata
-app.get("/api/products", (req, res) => {
-  res.json(products);
+  const results = await searchProducts(query);
+  res.json({ results });
 });
 
-// Start server
+// Start serveren
 const PORT = 3001;
-app.listen(PORT, () =>
-  console.log(`Server kjører på http://localhost:${PORT}`)
-);
+app.listen(PORT, () => console.log(`Server kjører på http://localhost:${PORT}`));
